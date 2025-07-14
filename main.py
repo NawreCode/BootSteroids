@@ -49,7 +49,7 @@ def main():
                 exit(1)
             for s in shots:
                 if a.isColliding(s):
-                    a.kill()
+                    a.split()
                     s.kill()
 
         pygame.display.flip()
