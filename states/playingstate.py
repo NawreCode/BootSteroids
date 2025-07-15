@@ -8,6 +8,7 @@ from player import Player
 from asteroid import Asteroid
 from asteroidfield import AsteroidField
 from shot import Shot
+from scoremanager import ScoreManager
 
 
 class PlayingState(GameState):
@@ -22,6 +23,7 @@ class PlayingState(GameState):
         self.shots = None
         self.player = None
         self.asteroid_field = None
+        self.score_manager = None
     
     def enter(self):
         """Called when entering the playing state."""
@@ -32,6 +34,9 @@ class PlayingState(GameState):
         self.drawable = pygame.sprite.Group()
         self.asteroids = pygame.sprite.Group()
         self.shots = pygame.sprite.Group()
+        
+        # Initialize score manager
+        self.score_manager = ScoreManager()
         
         # Set up containers for game objects
         Asteroid.containers = (self.asteroids, self.updatable, self.drawable)
@@ -67,14 +72,18 @@ class PlayingState(GameState):
         for asteroid in self.asteroids:
             if asteroid.isColliding(self.player):
                 print("Game over!")
-                # Transition to game over state
+                # Save high score before transitioning
+                self.score_manager.save_high_score()
+                # Transition to game over state with final score
                 from states.gameoverstate import GameOverState
-                self.state_manager.change_state(GameOverState(self.state_manager, final_score=0))
+                self.state_manager.change_state(GameOverState(self.state_manager, final_score=self.score_manager.get_score()))
                 return
             
             for shot in self.shots:
                 if asteroid.isColliding(shot):
-                    asteroid.split()
+                    # Award points for destroying asteroid
+                    points = asteroid.split()
+                    self.score_manager.add_score(points)
                     shot.kill()
     
     def draw(self, screen):
@@ -84,6 +93,16 @@ class PlayingState(GameState):
         # Draw all drawable objects
         for drawable_obj in self.drawable:
             drawable_obj.draw(screen)
+        
+        # Draw score display
+        if self.score_manager:
+            font = pygame.font.Font(None, 36)
+            score_text = font.render(f"Score: {self.score_manager.get_score()}", True, "white")
+            screen.blit(score_text, (10, 10))
+            
+            # Draw high score
+            high_score_text = font.render(f"High Score: {self.score_manager.get_high_score()}", True, "white")
+            screen.blit(high_score_text, (10, 50))
     
     def handle_event(self, event):
         """Handle playing state events."""
