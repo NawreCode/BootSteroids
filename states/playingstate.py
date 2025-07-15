@@ -2,7 +2,7 @@
 PlayingState class for active gameplay.
 """
 import pygame
-from gamestate import GameState
+from states.gamestate import GameState
 from constants import SCREEN_WIDTH, SCREEN_HEIGHT
 from player import Player
 from asteroid import Asteroid
@@ -68,7 +68,7 @@ class PlayingState(GameState):
             if asteroid.isColliding(self.player):
                 print("Game over!")
                 # Transition to game over state
-                from gameoverstate import GameOverState
+                from states.gameoverstate import GameOverState
                 self.state_manager.change_state(GameOverState(self.state_manager, final_score=0))
                 return
             
@@ -90,5 +90,5 @@ class PlayingState(GameState):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 # Transition to paused state when ESC is pressed
-                from pausedstate import PausedState
+                from states.pausedstate import PausedState
                 self.state_manager.change_state(PausedState(self.state_manager, self))

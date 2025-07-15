@@ -4,7 +4,7 @@
 import pygame
 from constants import SCREEN_HEIGHT, SCREEN_WIDTH
 from gamestatemanager import GameStateManager
-from menustate import MenuState
+from states.menustate import MenuState
 
 
 def main():

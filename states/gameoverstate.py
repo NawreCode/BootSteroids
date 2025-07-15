@@ -2,7 +2,7 @@
 GameOverState class for the game over screen.
 """
 import pygame
-from gamestate import GameState
+from states.gamestate import GameState
 from constants import SCREEN_WIDTH, SCREEN_HEIGHT
 
 
@@ -85,13 +85,13 @@ class GameOverState(GameState):
             elif event.key == pygame.K_RETURN:
                 if self.selected_option == 0:  # Restart
                     # Start a new game
-                    from playingstate import PlayingState
+                    from states.playingstate import PlayingState
                     self.state_manager.change_state(PlayingState(self.state_manager))
                 elif self.selected_option == 1:  # Main Menu
                     # Return to main menu
-                    from menustate import MenuState
+                    from states.menustate import MenuState
                     self.state_manager.change_state(MenuState(self.state_manager))
             elif event.key == pygame.K_ESCAPE:
                 # Go to main menu when ESC is pressed
-                from menustate import MenuState
+                from states.menustate import MenuState
                 self.state_manager.change_state(MenuState(self.state_manager))

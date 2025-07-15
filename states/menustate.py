@@ -2,7 +2,7 @@
 MenuState class for the main menu.
 """
 import pygame
-from gamestate import GameState
+from states.gamestate import GameState
 from constants import SCREEN_WIDTH, SCREEN_HEIGHT
 
 
@@ -72,7 +72,7 @@ class MenuState(GameState):
             elif event.key == pygame.K_RETURN:
                 if self.selected_option == 0:  # Start Game
                     # Import here to avoid circular imports
-                    from playingstate import PlayingState
+                    from states.playingstate import PlayingState
                     self.state_manager.change_state(PlayingState(self.state_manager))
                 elif self.selected_option == 1:  # Quit
                     pygame.quit()

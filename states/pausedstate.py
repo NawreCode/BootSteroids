@@ -2,7 +2,7 @@
 PausedState class for the pause overlay.
 """
 import pygame
-from gamestate import GameState
+from states.gamestate import GameState
 from constants import SCREEN_WIDTH, SCREEN_HEIGHT
 
 
@@ -84,7 +84,7 @@ class PausedState(GameState):
                 elif self.selected_option == 1:  # Quit to Menu
                     # Clean up playing state and go to menu
                     self.playing_state.exit()
-                    from menustate import MenuState
+                    from states.menustate import MenuState
                     self.state_manager.change_state(MenuState(self.state_manager))
             elif event.key == pygame.K_ESCAPE:
                 # Resume game when ESC is pressed
