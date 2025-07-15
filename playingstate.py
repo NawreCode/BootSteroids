@@ -67,9 +67,9 @@ class PlayingState(GameState):
         for asteroid in self.asteroids:
             if asteroid.isColliding(self.player):
                 print("Game over!")
-                # For now, just return to menu - later this will be handled by lives system
-                from menustate import MenuState
-                self.state_manager.change_state(MenuState(self.state_manager))
+                # Transition to game over state
+                from gameoverstate import GameOverState
+                self.state_manager.change_state(GameOverState(self.state_manager, final_score=0))
                 return
             
             for shot in self.shots:
@@ -89,6 +89,6 @@ class PlayingState(GameState):
         """Handle playing state events."""
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                # Return to menu when ESC is pressed
-                from menustate import MenuState
-                self.state_manager.change_state(MenuState(self.state_manager))
+                # Transition to paused state when ESC is pressed
+                from pausedstate import PausedState
+                self.state_manager.change_state(PausedState(self.state_manager, self))
