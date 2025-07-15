@@ -3,10 +3,8 @@
 # throughout this file
 import pygame
 from constants import SCREEN_HEIGHT, SCREEN_WIDTH
-from player import Player
-from asteroid import Asteroid
-from asteroidfield import AsteroidField
-from shot import Shot
+from gamestatemanager import GameStateManager
+from menustate import MenuState
 
 
 def main():
@@ -15,42 +13,24 @@ def main():
     print("Screen height:", SCREEN_HEIGHT)
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    pygame.display.set_caption("Asteroids")
 
     clock = pygame.time.Clock()
     dt = 0
 
-    updatable = pygame.sprite.Group()
-    drawable = pygame.sprite.Group()
-    asteroids = pygame.sprite.Group()
-    shots = pygame.sprite.Group()
-    Asteroid.containers = (asteroids, updatable, drawable)
-    AsteroidField.containers = (updatable)
-    Player.containers = (updatable, drawable)
-    Shot.containers = (updatable, drawable, shots)
-
-    x = SCREEN_WIDTH/2
-    y = SCREEN_HEIGHT/2
-    player = Player(x, y)
-    af = AsteroidField()
+    # Initialize game state manager and start with menu
+    state_manager = GameStateManager()
+    initial_state = MenuState(state_manager)
+    state_manager.change_state(initial_state)
 
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return
+            state_manager.handle_event(event)
 
-        screen.fill("black")
-        updatable.update(dt)
-        for d in drawable:
-            d.draw(screen)
-
-        for a in asteroids:
-            if a.isColliding(player):
-                print("Game over!")
-                exit(1)
-            for s in shots:
-                if a.isColliding(s):
-                    a.split()
-                    s.kill()
+        state_manager.update(dt)
+        state_manager.draw(screen)
 
         pygame.display.flip()
         dt = clock.tick(60)/1000
