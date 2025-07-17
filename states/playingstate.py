@@ -3,13 +3,14 @@ PlayingState class for active gameplay.
 """
 import pygame
 from states.gamestate import GameState
-from constants import SCREEN_WIDTH, SCREEN_HEIGHT
+from constants import SCREEN_WIDTH, SCREEN_HEIGHT, ASTEROID_MIN_RADIUS, ASTEROID_KINDS
 from player import Player
 from asteroid import Asteroid
 from asteroidfield import AsteroidField
 from shot import Shot
 from scoremanager import ScoreManager
 from livesmanager import LivesManager
+from particle import ParticleSystem
 
 
 class PlayingState(GameState):
@@ -26,6 +27,7 @@ class PlayingState(GameState):
         self.asteroid_field = None
         self.score_manager = None
         self.lives_manager = None
+        self.particle_system = None
         self.extra_life_notification_time = 0
         self.extra_life_notification_duration = 3.0  # Show notification for 3 seconds
     
@@ -42,6 +44,7 @@ class PlayingState(GameState):
         # Initialize managers
         self.score_manager = ScoreManager()
         self.lives_manager = LivesManager()
+        self.particle_system = ParticleSystem()
         
         # Set up containers for game objects
         Asteroid.containers = (self.asteroids, self.updatable, self.drawable)
@@ -73,10 +76,34 @@ class PlayingState(GameState):
         # Update all updatable objects
         self.updatable.update(dt)
         
+        # Update particle system
+        if self.particle_system:
+            self.particle_system.update(dt)
+        
         # Check collisions
         for asteroid in self.asteroids:
             if asteroid.isColliding(self.player) and not self.lives_manager.is_invincible():
                 print("Player hit! Lives remaining:", self.lives_manager.get_lives() - 1)
+                
+                # Create player destruction explosion effect
+                self.particle_system.emit_explosion(
+                    self.player.position,
+                    count=30,
+                    size="medium",
+                    color_scheme="white"
+                )
+                
+                # Add additional burst effect in player's movement direction
+                if hasattr(self.player, 'velocity') and self.player.velocity.length() > 0:
+                    self.particle_system.emit_burst(
+                        self.player.position,
+                        self.player.velocity,
+                        count=15,
+                        spread_angle=3.14159/2,  # 90 degrees
+                        color=(255, 100, 100),  # Red color
+                        speed_range=(50, 150),
+                        lifetime_range=(0.8, 1.5)
+                    )
                 
                 # Lose a life and check if game over
                 game_over = self.lives_manager.lose_life()
@@ -96,6 +123,27 @@ class PlayingState(GameState):
             
             for shot in self.shots:
                 if asteroid.isColliding(shot):
+                    # Create explosion effect based on asteroid size
+                    explosion_size = "small"
+                    explosion_count = 15
+                    
+                    # Determine explosion size based on asteroid radius
+                    max_radius = ASTEROID_MIN_RADIUS * ASTEROID_KINDS
+                    if asteroid.radius >= max_radius:
+                        explosion_size = "large"
+                        explosion_count = 25
+                    elif asteroid.radius >= ASTEROID_MIN_RADIUS * 2:
+                        explosion_size = "medium"
+                        explosion_count = 20
+                    
+                    # Create explosion at asteroid position
+                    self.particle_system.emit_explosion(
+                        asteroid.position, 
+                        count=explosion_count, 
+                        size=explosion_size, 
+                        color_scheme="orange"
+                    )
+                    
                     # Award points for destroying asteroid
                     points = asteroid.split()
                     self.score_manager.add_score(points)
@@ -116,7 +164,70 @@ class PlayingState(GameState):
         self.player.position.y = SCREEN_HEIGHT / 2
         # Reset player rotation
         self.player.rotation = 0
+        
+        # Create respawn particle effect
+        respawn_position = pygame.Vector2(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
+        
+        # Create a circular burst of particles for respawn effect
+        self.particle_system.emit_explosion(
+            respawn_position,
+            count=20,
+            size="small",
+            color_scheme="blue"
+        )
+        
+        # Add additional sparkle effect
+        import math
+        for i in range(12):  # Create 12 particles in a circle
+            angle = (i / 12) * 2 * math.pi
+            direction = pygame.Vector2(math.cos(angle), math.sin(angle))
+            self.particle_system.emit_burst(
+                respawn_position,
+                direction,
+                count=3,
+                spread_angle=math.pi/6,  # 30 degrees
+                color=(100, 200, 255),  # Light blue
+                speed_range=(80, 120),
+                lifetime_range=(1.0, 1.8)
+            )
+        
         print(f"Player respawned! Invincible for {self.lives_manager.invincibility_duration} seconds")
+    
+    def _create_invincibility_effects(self):
+        """Create subtle particle effects around the player during invincibility."""
+        import random
+        import math
+        
+        # Create occasional sparkle particles around the player
+        if random.random() < 0.3:  # 30% chance each frame
+            # Create particles in a circle around the player
+            angle = random.uniform(0, 2 * math.pi)
+            distance = self.player.radius + random.uniform(5, 15)
+            
+            particle_pos = pygame.Vector2(
+                self.player.position.x + math.cos(angle) * distance,
+                self.player.position.y + math.sin(angle) * distance
+            )
+            
+            # Create a small sparkle effect
+            sparkle_velocity = pygame.Vector2(
+                random.uniform(-20, 20),
+                random.uniform(-20, 20)
+            )
+            
+            # Use light blue/white colors for invincibility
+            colors = [(200, 200, 255), (255, 255, 255), (150, 200, 255)]
+            color = random.choice(colors)
+            
+            from particle import Particle
+            particle = Particle(
+                particle_pos,
+                sparkle_velocity,
+                color,
+                lifetime=0.8,
+                size=1
+            )
+            self.particle_system.particles.append(particle)
     
     def show_extra_life_notification(self):
         """Show extra life notification for a few seconds."""
@@ -136,8 +247,15 @@ class PlayingState(GameState):
                 flash_rate = 8  # flashes per second
                 if int(time.time() * flash_rate) % 2 == 0:
                     drawable_obj.draw(screen)
+                
+                # Add invincibility particle effects around the player
+                self._create_invincibility_effects()
             else:
                 drawable_obj.draw(screen)
+        
+        # Draw particle effects
+        if self.particle_system:
+            self.particle_system.draw(screen)
         
         # Draw UI elements
         if self.score_manager and self.lives_manager:
