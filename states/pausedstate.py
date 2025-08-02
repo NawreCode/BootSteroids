@@ -9,10 +9,11 @@ from constants import SCREEN_WIDTH, SCREEN_HEIGHT
 class PausedState(GameState):
     """Pause overlay state with resume and quit options."""
     
-    def __init__(self, state_manager, playing_state):
+    def __init__(self, state_manager, playing_state, sound_manager=None):
         """Initialize the paused state."""
         super().__init__(state_manager)
         self.playing_state = playing_state  # Reference to the playing state to resume
+        self.sound_manager = sound_manager or (playing_state.sound_manager if hasattr(playing_state, 'sound_manager') else None)
         self.font = None
         self.title_font = None
         self.selected_option = 0
@@ -24,6 +25,11 @@ class PausedState(GameState):
         pygame.font.init()
         self.title_font = pygame.font.Font(None, 72)
         self.font = pygame.font.Font(None, 48)
+        
+        # Pause the background music
+        if self.sound_manager:
+            self.sound_manager.pause_music()
+        
         print("Entered Paused State")
     
     def exit(self):
@@ -74,18 +80,30 @@ class PausedState(GameState):
         """Handle pause menu events."""
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
+                if self.sound_manager:
+                    self.sound_manager.play_sound('menu_navigate')
                 self.selected_option = (self.selected_option - 1) % len(self.menu_options)
             elif event.key == pygame.K_DOWN:
+                if self.sound_manager:
+                    self.sound_manager.play_sound('menu_navigate')
                 self.selected_option = (self.selected_option + 1) % len(self.menu_options)
             elif event.key == pygame.K_RETURN:
+                if self.sound_manager:
+                    self.sound_manager.play_sound('menu_select')
                 if self.selected_option == 0:  # Resume
+                    if self.sound_manager:
+                        self.sound_manager.play_sound('unpause')
+                        self.sound_manager.unpause_music()
                     # Return to the playing state
                     self.state_manager.change_state(self.playing_state)
                 elif self.selected_option == 1:  # Quit to Menu
                     # Clean up playing state and go to menu
                     self.playing_state.exit()
                     from states.menustate import MenuState
-                    self.state_manager.change_state(MenuState(self.state_manager))
+                    self.state_manager.change_state(MenuState(self.state_manager, self.sound_manager))
             elif event.key == pygame.K_ESCAPE:
+                if self.sound_manager:
+                    self.sound_manager.play_sound('unpause')
+                    self.sound_manager.unpause_music()
                 # Resume game when ESC is pressed
                 self.state_manager.change_state(self.playing_state)

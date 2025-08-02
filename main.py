@@ -5,6 +5,7 @@ import pygame
 from constants import SCREEN_HEIGHT, SCREEN_WIDTH
 from gamestatemanager import GameStateManager
 from states.menustate import MenuState
+from soundmanager import SoundManager
 
 
 def main():
@@ -18,9 +19,12 @@ def main():
     clock = pygame.time.Clock()
     dt = 0
 
+    # Initialize sound manager
+    sound_manager = SoundManager()
+
     # Initialize game state manager and start with menu
     state_manager = GameStateManager()
-    initial_state = MenuState(state_manager)
+    initial_state = MenuState(state_manager, sound_manager)
     state_manager.change_state(initial_state)
 
     while True:

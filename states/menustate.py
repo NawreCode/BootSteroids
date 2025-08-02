@@ -9,9 +9,10 @@ from constants import SCREEN_WIDTH, SCREEN_HEIGHT
 class MenuState(GameState):
     """Main menu state with simple menu rendering."""
     
-    def __init__(self, state_manager):
+    def __init__(self, state_manager, sound_manager=None):
         """Initialize the menu state."""
         super().__init__(state_manager)
+        self.sound_manager = sound_manager
         self.font = None
         self.title_font = None
         self.selected_option = 0
@@ -23,6 +24,11 @@ class MenuState(GameState):
         pygame.font.init()
         self.title_font = pygame.font.Font(None, 72)
         self.font = pygame.font.Font(None, 48)
+        
+        # Start menu background music
+        if self.sound_manager:
+            self.sound_manager.play_music('sounds/menu_music.mp3', loop=True)
+        
         print("Entered Menu State")
     
     def exit(self):
@@ -66,14 +72,20 @@ class MenuState(GameState):
         """Handle menu events."""
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
+                if self.sound_manager:
+                    self.sound_manager.play_sound('menu_navigate')
                 self.selected_option = (self.selected_option - 1) % len(self.menu_options)
             elif event.key == pygame.K_DOWN:
+                if self.sound_manager:
+                    self.sound_manager.play_sound('menu_navigate')
                 self.selected_option = (self.selected_option + 1) % len(self.menu_options)
             elif event.key == pygame.K_RETURN:
+                if self.sound_manager:
+                    self.sound_manager.play_sound('menu_select')
                 if self.selected_option == 0:  # Start Game
                     # Import here to avoid circular imports
                     from states.playingstate import PlayingState
-                    self.state_manager.change_state(PlayingState(self.state_manager))
+                    self.state_manager.change_state(PlayingState(self.state_manager, self.sound_manager))
                 elif self.selected_option == 1:  # Quit
                     pygame.quit()
                     exit()

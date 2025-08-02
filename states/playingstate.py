@@ -16,9 +16,10 @@ from particle import ParticleSystem
 class PlayingState(GameState):
     """Active gameplay state."""
     
-    def __init__(self, state_manager):
+    def __init__(self, state_manager, sound_manager=None):
         """Initialize the playing state."""
         super().__init__(state_manager)
+        self.sound_manager = sound_manager
         self.updatable = None
         self.drawable = None
         self.asteroids = None
@@ -55,8 +56,12 @@ class PlayingState(GameState):
         # Create player and asteroid field
         x = SCREEN_WIDTH / 2
         y = SCREEN_HEIGHT / 2
-        self.player = Player(x, y)
+        self.player = Player(x, y, self.sound_manager)
         self.asteroid_field = AsteroidField()
+        
+        # Start gameplay background music
+        if self.sound_manager:
+            self.sound_manager.play_music('sounds/gameplay_music.mp3', loop=True)
     
     def exit(self):
         """Called when leaving the playing state."""
@@ -105,6 +110,10 @@ class PlayingState(GameState):
                         lifetime_range=(0.8, 1.5)
                     )
                 
+                # Play player death sound
+                if self.sound_manager:
+                    self.sound_manager.play_sound('player_death')
+                
                 # Lose a life and check if game over
                 game_over = self.lives_manager.lose_life()
                 
@@ -114,7 +123,7 @@ class PlayingState(GameState):
                     self.score_manager.save_high_score()
                     # Transition to game over state with final score
                     from states.gameoverstate import GameOverState
-                    self.state_manager.change_state(GameOverState(self.state_manager, final_score=self.score_manager.get_score()))
+                    self.state_manager.change_state(GameOverState(self.state_manager, final_score=self.score_manager.get_score(), sound_manager=self.sound_manager))
                     return
                 else:
                     # Respawn player at center
@@ -144,6 +153,15 @@ class PlayingState(GameState):
                         color_scheme="orange"
                     )
                     
+                    # Play explosion sound based on asteroid size
+                    if self.sound_manager:
+                        if asteroid.radius >= max_radius:
+                            self.sound_manager.play_sound('explosion_large')
+                        elif asteroid.radius >= ASTEROID_MIN_RADIUS * 2:
+                            self.sound_manager.play_sound('explosion_medium')
+                        else:
+                            self.sound_manager.play_sound('explosion_small')
+                    
                     # Award points for destroying asteroid
                     points = asteroid.split()
                     self.score_manager.add_score(points)
@@ -152,6 +170,9 @@ class PlayingState(GameState):
                     if self.score_manager.check_extra_life():
                         self.lives_manager.add_life()
                         print(f"Extra life earned! Lives: {self.lives_manager.get_lives()}")
+                        # Play extra life sound
+                        if self.sound_manager:
+                            self.sound_manager.play_sound('extra_life')
                         # Store the extra life notification for visual display
                         self.show_extra_life_notification()
                     
@@ -305,6 +326,9 @@ class PlayingState(GameState):
         """Handle playing state events."""
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
+                # Play pause sound
+                if self.sound_manager:
+                    self.sound_manager.play_sound('pause')
                 # Transition to paused state when ESC is pressed
                 from states.pausedstate import PausedState
-                self.state_manager.change_state(PausedState(self.state_manager, self))
+                self.state_manager.change_state(PausedState(self.state_manager, self, self.sound_manager))

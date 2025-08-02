@@ -9,10 +9,11 @@ from constants import SCREEN_WIDTH, SCREEN_HEIGHT
 class GameOverState(GameState):
     """Game over screen with score display and restart options."""
     
-    def __init__(self, state_manager, final_score=0):
+    def __init__(self, state_manager, final_score=0, sound_manager=None):
         """Initialize the game over state."""
         super().__init__(state_manager)
         self.final_score = final_score
+        self.sound_manager = sound_manager
         self.font = None
         self.title_font = None
         self.score_font = None
@@ -26,6 +27,13 @@ class GameOverState(GameState):
         self.title_font = pygame.font.Font(None, 72)
         self.font = pygame.font.Font(None, 48)
         self.score_font = pygame.font.Font(None, 36)
+        
+        # Fade out current music and play game over music
+        if self.sound_manager:
+            self.sound_manager.fade_out_music(2000)  # 2 second fade out
+            # Wait a moment then play game over music
+            pygame.time.set_timer(pygame.USEREVENT + 1, 2500)  # Start game over music after 2.5 seconds
+        
         print("Entered Game Over State")
     
     def exit(self):
@@ -77,21 +85,31 @@ class GameOverState(GameState):
     
     def handle_event(self, event):
         """Handle game over screen events."""
-        if event.type == pygame.KEYDOWN:
+        if event.type == pygame.USEREVENT + 1:
+            # Timer event to start game over music
+            if self.sound_manager:
+                self.sound_manager.play_music('sounds/gameover_music.mp3', loop=True)
+        elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
+                if self.sound_manager:
+                    self.sound_manager.play_sound('menu_navigate')
                 self.selected_option = (self.selected_option - 1) % len(self.menu_options)
             elif event.key == pygame.K_DOWN:
+                if self.sound_manager:
+                    self.sound_manager.play_sound('menu_navigate')
                 self.selected_option = (self.selected_option + 1) % len(self.menu_options)
             elif event.key == pygame.K_RETURN:
+                if self.sound_manager:
+                    self.sound_manager.play_sound('menu_select')
                 if self.selected_option == 0:  # Restart
                     # Start a new game
                     from states.playingstate import PlayingState
-                    self.state_manager.change_state(PlayingState(self.state_manager))
+                    self.state_manager.change_state(PlayingState(self.state_manager, self.sound_manager))
                 elif self.selected_option == 1:  # Main Menu
                     # Return to main menu
                     from states.menustate import MenuState
-                    self.state_manager.change_state(MenuState(self.state_manager))
+                    self.state_manager.change_state(MenuState(self.state_manager, self.sound_manager))
             elif event.key == pygame.K_ESCAPE:
                 # Go to main menu when ESC is pressed
                 from states.menustate import MenuState
-                self.state_manager.change_state(MenuState(self.state_manager))
+                self.state_manager.change_state(MenuState(self.state_manager, self.sound_manager))

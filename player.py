@@ -9,9 +9,10 @@ class Player(CircleShape):
 
     shoot_cooldown = 0 # Cooldown for shooting
 
-    def __init__(self, x: int, y: int):
+    def __init__(self, x: int, y: int, sound_manager=None):
         super().__init__(x, y, PLAYER_RADIUS)
         self.rotation = 0
+        self.sound_manager = sound_manager
 
     # in the player class
     def triangle(self):
@@ -51,6 +52,11 @@ class Player(CircleShape):
     def shoot(self):
         if self.shoot_cooldown > 0:
             return
+        
+        # Play shooting sound
+        if self.sound_manager:
+            self.sound_manager.play_sound('shoot')
+        
         shot = Shot(self.position[0], self.position[1])
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
         shot.velocity = forward * PLAYSER_SHOOT_SPEED
